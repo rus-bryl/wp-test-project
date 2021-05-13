@@ -1,0 +1,14 @@
+---
+#
+- name: Install fucking .deb package from the internet
+  apt:
+    deb: https://repo.percona.com/apt/percona-release_latest.focal_all.deb
+#
+- debug:
+    msg: "Current OS release is: {{ ansible_distribution_release }}"
+#
+- name: Update apt cache
+  apt:
+    update_cache=yes
+
+

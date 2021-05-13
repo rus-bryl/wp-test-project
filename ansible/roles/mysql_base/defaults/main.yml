@@ -1,0 +1,16 @@
+---
+
+
+
+
+
+# checked
+#mysql_repo: "http://repo.percona.com/percona/yum/percona-release-latest.noarch.rpm"
+
+########## not checked
+#mysql_packages: "Percona-Server-server-57,MySQL-python,percona-xtrabackup,percona-toolkit"
+
+#mysql_name: "mysqld"
+#mysql_pid: "/var/run/mysqld/mysqld.pid"
+#mysql_start: "/usr/bin/systemctl start {{mysql_name}}"
+#mysql_stop: "/usr/bin/systemctl stop {{mysql_name}}"

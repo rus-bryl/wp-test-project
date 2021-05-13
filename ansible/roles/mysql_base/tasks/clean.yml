@@ -1,0 +1,21 @@
+---
+#
+- name: Remove percona-server.cnf
+  file:
+    path: /etc/mysql/percona-server.cnf
+    state: absent
+#
+- name: Remove unneeded folder
+  file:
+    state: absent
+    path: /etc/mysql/percona-server.conf.d/
+#
+- name: Remove mysql.cnf from conf.d
+  file:
+    path: /etc/mysql/conf.d/mysql.cnf
+    state: absent
+#
+- name: Remove mysqldump.cnf from conf.d
+  file:
+    path: /etc/mysql/conf.d/mysqldump.cnf
+    state: absent
