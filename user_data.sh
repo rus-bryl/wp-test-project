@@ -1,21 +1,25 @@
 #!/bin/bash
 
 sudo apt update
-sudo apt install lamp -y
+sudo apt install apache2 -y
 
 myip=`curl https://ipinfo.io/ip`
 
+echo "ServerName localhost"> /etc/apache2/apache2.conf
 cat <<EOF > /var/www/html/index.html
 <html>
 <body bgcolor="black">
-<h2><font color="gold">Build by Power Terraform <font color="red"> v0.12</font></h2><br><p>
+<center>
+<h2><font color="gold">WordPress will be here little bit later... </h2><br><p>
 <font color="green">Server IP: <font color="aqua">$myip<br><br>
 
 <font color="magenta">
 <b>Version 3.0</b>
+</center>
 </body>
 </html>
 EOF
 
-sudo service httpd start
+sudo systemctl start apache2
+sudo systemctl enable apache2
 chkconfig httpd on
