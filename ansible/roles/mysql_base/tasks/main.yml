@@ -1,0 +1,9 @@
+---
+#
+- include: repo.yml
+- include: packages.yml
+- include: setconfig.yml
+- include: clean.yml
+- include: setupusers.yml
+
+

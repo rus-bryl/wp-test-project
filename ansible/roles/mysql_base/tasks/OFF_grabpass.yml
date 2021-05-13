@@ -1,0 +1,10 @@
+---
+#
+- name: Get temporary root password
+  shell: "cat /var/log/mysql/error.log | sed -n 's/.*temporary password is generated for root@localhost: //p'"
+  register: temporary_root_password
+  args:
+    warn: no
+#
+- debug:
+    msg: "MySQL temporary root pass is: {{ temporary_root_password.stdout }} "

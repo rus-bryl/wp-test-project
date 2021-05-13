@@ -1,0 +1,21 @@
+---
+#
+- name: Setup mysql baseusers
+  copy:
+    src: noroot.sql
+    dest: /tmp/mx_mysql_users.sql
+#
+- name: Start Percona MySQL
+  service:
+    name: mysql.service
+    state: started
+    enabled: true
+#
+- name: Just add it
+  shell: mysql -u root < /tmp/mx_mysql_users.sql
+#
+- name: Remove mx_mysql_users.sql
+  file:
+    path: /tmp/mx_mysql_users.sql
+    state: absent
+#

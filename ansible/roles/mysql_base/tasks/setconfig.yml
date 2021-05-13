@@ -1,0 +1,6 @@
+---
+#
+- name: Put my.cnf to server
+  copy:
+    src: my.cnf
+    dest: /etc/mysql/my.cnf
