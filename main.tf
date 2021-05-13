@@ -131,7 +131,15 @@ resource "aws_security_group" "mysql" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+#=====================SSH Keys===============================
+variable "ssh_key" {
+  default = "~/.ssh/id_rsa.pub"
+}
 
+resource "aws_key_pair" "deployer" {
+  key_name   = "deployer-key"
+  public_key = file(var.ssh_key)
+}
 #====================DataBase================================
 
 resource "aws_db_instance" "wp_db" {
@@ -153,6 +161,7 @@ resource "aws_launch_configuration" "web" {
   image_id        = data.aws_ami.latest_ubuntu_linux.id
   instance_type   = "t3.micro"
   security_groups = [aws_security_group.web.id]
+  key_name        = aws_key_pair.deployer.key_name
   user_data       = file("user_data.sh")
   lifecycle {
     create_before_destroy = true
