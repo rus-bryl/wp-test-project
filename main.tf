@@ -23,6 +23,60 @@ data "aws_ami" "latest_ubuntu_linux" {
   }
 }
 
+#=====================VPCs========================================
+
+resource "aws_vpc" "main" {
+  cidr_block = "10.0.0.0/16"
+  tags = {
+    Name = "main-vpc"
+  }
+}
+
+resource "aws_subnet" "public1" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = data.aws_availability_zones.available.names[0]
+  tags = {
+    Name = "public-vpc-1"
+  }
+}
+
+resource "aws_subnet" "public2" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = data.aws_availability_zones.available.names[1]
+  tags = {
+    Name = "public-vpc-2"
+  }
+}
+
+resource "aws_subnet" "private1" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.11.0/24"
+  availability_zone = data.aws_availability_zones.available.names[0]
+  tags = {
+    Name = "private-vpc-1"
+  }
+}
+
+resource "aws_subnet" "private2" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = "10.0.22.0/24"
+  availability_zone = data.aws_availability_zones.available.names[1]
+  tags = {
+    Name = "private-vpc-2"
+  }
+}
+
+resource "aws_db_subnet_group" "mysql" {
+  name       = "mysql-subnetgroup"
+  subnet_ids = [aws_subnet.private1.id, aws_subnet.private2.id]
+  tags = {
+    Name = "MySQL-SubnetGroup"
+  }
+}
+
+
 #=================Security Groups=================================
 resource "aws_security_group" "web" {
   name        = "Web Security Group"
@@ -30,9 +84,10 @@ resource "aws_security_group" "web" {
   dynamic "ingress" {
     for_each = ["80", "443", "22"]
     content {
-      from_port   = ingress.value
-      to_port     = ingress.value
-      protocol    = "tcp"
+      from_port = ingress.value
+      to_port   = ingress.value
+      protocol  = "tcp"
+      #      vpc_id      = aws_vpc.main.id
       cidr_blocks = ["0.0.0.0/0"]
     }
   }
@@ -55,6 +110,40 @@ resource "aws_security_group" "web" {
     Name  = "Web Server SecurityGroup"
     Owner = "Ruslan Bryl"
   }
+}
+
+resource "aws_security_group" "mysql" {
+  name        = "mysql security group"
+  description = "MySQL Security Group"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = "3306"
+    to_port     = "3306"
+    cidr_blocks = ["10.0.0.0/16"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+#====================DataBase================================
+
+resource "aws_db_instance" "wp_db" {
+  allocated_storage      = 20
+  engine                 = "mysql"
+  instance_class         = "db.t3.micro"
+  name                   = "wpdb"
+  username               = "wpuser"
+  password               = "wppassword"
+  vpc_security_group_ids = [aws_security_group.mysql.id]
+  db_subnet_group_name   = aws_db_subnet_group.mysql.name
+  skip_final_snapshot    = true
 }
 
 #====================WebServer===============================
