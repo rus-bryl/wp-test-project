@@ -33,18 +33,20 @@ resource "aws_vpc" "main" {
 }
 
 resource "aws_subnet" "public1" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.1.0/24"
-  availability_zone = data.aws_availability_zones.available.names[0]
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[0]
+  map_public_ip_on_launch = true
   tags = {
     Name = "public-vpc-1"
   }
 }
 
 resource "aws_subnet" "public2" {
-  vpc_id            = aws_vpc.main.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = data.aws_availability_zones.available.names[1]
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = data.aws_availability_zones.available.names[1]
+  map_public_ip_on_launch = true
   tags = {
     Name = "public-vpc-2"
   }
@@ -76,18 +78,46 @@ resource "aws_db_subnet_group" "mysql" {
   }
 }
 
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+  tags = {
+    Name = "wp-net-igw"
+  }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+  tags = {
+    Name = "wp-public-default-route"
+  }
+}
+
+resource "aws_route_table_association" "public1" {
+  route_table_id = aws_route_table.public.id
+  subnet_id      = aws_subnet.public1.id
+}
+
+resource "aws_route_table_association" "public2" {
+  route_table_id = aws_route_table.public.id
+  subnet_id      = aws_subnet.public2.id
+}
+
 
 #=================Security Groups=================================
 resource "aws_security_group" "web" {
   name        = "Web Security Group"
   description = "Web Dynamic SecurityGruop"
+  vpc_id      = aws_vpc.main.id
   dynamic "ingress" {
     for_each = ["80", "443", "22"]
     content {
-      from_port = ingress.value
-      to_port   = ingress.value
-      protocol  = "tcp"
-      #      vpc_id      = aws_vpc.main.id
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
       cidr_blocks = ["0.0.0.0/0"]
     }
   }
@@ -175,8 +205,9 @@ resource "aws_autoscaling_group" "web" {
   max_size             = 2
   min_elb_capacity     = 2
   health_check_type    = "ELB"
-  vpc_zone_identifier  = [aws_default_subnet.default_az1.id, aws_default_subnet.default_az2.id]
-  load_balancers       = [aws_elb.web.name]
+  #  vpc_zone_identifier  = [aws_default_subnet.default_az1.id, aws_default_subnet.default_az2.id]
+  vpc_zone_identifier = [aws_subnet.public1.id, aws_subnet.public2.id]
+  load_balancers      = [aws_elb.web.name]
 
   lifecycle {
     create_before_destroy = true
@@ -184,9 +215,10 @@ resource "aws_autoscaling_group" "web" {
 }
 
 resource "aws_elb" "web" {
-  name               = "WebServer-HA-ELB"
-  availability_zones = [data.aws_availability_zones.available.names[0], data.aws_availability_zones.available.names[1]]
-  security_groups    = [aws_security_group.web.id]
+  name = "WebServer-HA-ELB"
+  #availability_zones = [data.aws_availability_zones.available.names[0], data.aws_availability_zones.available.names[1]]
+  subnets         = [aws_subnet.public1.id, aws_subnet.public2.id]
+  security_groups = [aws_security_group.web.id]
   listener {
     lb_port           = 80
     lb_protocol       = "http"
