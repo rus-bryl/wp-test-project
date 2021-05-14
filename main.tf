@@ -106,6 +106,66 @@ resource "aws_route_table_association" "public2" {
   subnet_id      = aws_subnet.public2.id
 }
 
+resource "aws_eip" "eip1" {
+  vpc = true
+  tags = {
+    Name = "wp-net-nat1-ip"
+  }
+}
+resource "aws_eip" "eip2" {
+  vpc = true
+  tags = {
+    Name = "wp-net-nat2-ip"
+  }
+}
+
+resource "aws_nat_gateway" "nat1" {
+  subnet_id     = aws_subnet.public1.id
+  allocation_id = aws_eip.eip1.id
+  tags = {
+    Name = "wp-net-nat1"
+  }
+}
+
+resource "aws_nat_gateway" "nat2" {
+  subnet_id     = aws_subnet.public2.id
+  allocation_id = aws_eip.eip2.id
+  tags = {
+    Name = "wp-net-nat2"
+  }
+}
+
+resource "aws_route_table" "private1" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.nat1.id
+  }
+  tags = {
+    Name = "wp-private1-default-route"
+  }
+}
+
+resource "aws_route_table" "private2" {
+  vpc_id = aws_vpc.main.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_nat_gateway.nat2.id
+  }
+  tags = {
+    Name = "wp-private2-default-route"
+  }
+}
+
+resource "aws_route_table_association" "private1" {
+  route_table_id = aws_route_table.private1.id
+  subnet_id      = aws_subnet.private1.id
+}
+
+resource "aws_route_table_association" "private2" {
+  route_table_id = aws_route_table.private2.id
+  subnet_id      = aws_subnet.private2.id
+}
 
 #=================Security Groups=================================
 resource "aws_security_group" "web" {
